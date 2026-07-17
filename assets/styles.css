@@ -623,5 +623,43 @@ section{padding-block:clamp(64px,8vw,128px)}
 .nav .nav-links a:not(.btn-accent):hover,.nav .nav-links a.active:not(.btn-accent){color:var(--ink)}
 }
 
-/* === auto-paleta ze zdjęć klienta (dopasowanie do estetyki socials) === */
-:root{--accent:#A05D31;--accent-d:#7D4521;--accent-soft:rgba(160,93,49,0.10);--paper:#F9F9F8;--paper-2:#EFEEED;--paper-3:#E8E6E5;}
+/* === paleta z LOGA klienta (czerwień dachu #E4000C, błękit śnieżynki #009CE4) ===
+   Wcześniej stała tu auto-paleta ze stocku (brąz #A05D31) - gryzła się z logiem i z branżą.
+   Czerwień przyciemniona do #D8000C: kontrast 5.35:1 na bieli (biały tekst na przyciskach = AA). */
+:root{
+  --accent:#D8000C; --accent-d:#B00D10; --accent-soft:rgba(216,0,12,0.10);
+  --accent-cool:#0089C8;                  /* chłodny biegun - klimatyzacja/chłodzenie */
+  --accent-cool-soft:rgba(0,137,200,0.10);
+  --paper:#F7F8FA; --paper-2:#EBEEF3; --paper-3:#E4E8EE;
+}
+
+/* === FAQ - pytania, które i tak padają przy pierwszym telefonie === */
+/* align-items:stretch (nie start) - inaczej pytania 1- i 2-wierszowe rozjeżdżają linie w wierszu */
+.faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4) var(--space-6);align-items:stretch}
+.faq{background:var(--paper-2)}
+@media(max-width:820px){.faq-grid{grid-template-columns:1fr}}
+.faq-item{border-bottom:var(--hairline);padding:var(--space-4) 0}
+.faq-item summary{list-style:none;cursor:pointer;display:flex;gap:var(--space-4);align-items:baseline;
+  font-family:var(--font-display);font-weight:600;font-size:var(--text-h3);color:var(--ink);
+  transition:color var(--dur) var(--ease)}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-item summary:hover{color:var(--accent)}
+.faq-item summary::after{content:"+";margin-left:auto;font-weight:500;color:var(--accent);
+  transition:transform var(--dur) var(--ease);line-height:1}
+.faq-item[open] summary::after{transform:rotate(45deg)}
+.faq-item p{color:var(--muted);font-size:var(--text-sm);margin-top:var(--space-3);max-width:56ch}
+
+/* === LIGHTBOX galerii - kafel po kliknięciu w pełnym kadrze === */
+.tile,.gallery-masonry .m-tile{cursor:zoom-in}
+.lb{position:fixed;inset:0;z-index:200;display:none;place-items:center;padding:clamp(1rem,4vw,3rem);
+  background:rgba(12,18,26,.94);backdrop-filter:blur(3px)}
+.lb.open{display:grid}
+.lb img{max-width:100%;max-height:82vh;object-fit:contain;border-radius:var(--r-sm);box-shadow:var(--sh-lg)}
+.lb-cap{margin-top:var(--space-4);color:#fff;font-size:var(--text-sm);text-align:center;opacity:.9}
+.lb-close,.lb-prev,.lb-next{position:absolute;background:none;border:0;color:#fff;cursor:pointer;
+  font-size:2rem;line-height:1;padding:var(--space-4);opacity:.7;transition:opacity var(--dur) var(--ease)}
+.lb-close:hover,.lb-prev:hover,.lb-next:hover{opacity:1}
+.lb-close{top:0;right:0}
+.lb-prev{left:0;top:50%;transform:translateY(-50%)}
+.lb-next{right:0;top:50%;transform:translateY(-50%)}
+@media(max-width:820px){.lb-prev,.lb-next{font-size:1.6rem}}
