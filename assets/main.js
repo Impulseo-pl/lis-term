@@ -1,149 +1,60 @@
-// STOLBASZ — drobna interaktywność (nav mobile + reveal)
+// Lis-Term — interakcje demo
 (function () {
-  // mobilne menu
-  var toggle = document.querySelector('.nav-toggle');
-  var links = document.querySelector('.nav-links');
-  if (toggle && links) {
-    toggle.addEventListener('click', function () {
-      links.classList.toggle('open');
-    });
-    links.querySelectorAll('a').forEach(function (a) {
-      a.addEventListener('click', function () { links.classList.remove('open'); });
-    });
-  }
+  var hdr = document.getElementById('hdr');
+  var onScroll = function () {
+    if (window.scrollY > 8) hdr.classList.add('scrolled');
+    else hdr.classList.remove('scrolled');
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 
-  // reveal przy scrollu
+  // mobile menu
+  var burger = document.getElementById('burger');
+  var drawer = document.getElementById('drawer');
+  burger.addEventListener('click', function () {
+    drawer.classList.toggle('open');
+    burger.classList.toggle('open');
+  });
+  drawer.querySelectorAll('a').forEach(function (a) {
+    a.addEventListener('click', function () {
+      drawer.classList.remove('open');
+      burger.classList.remove('open');
+    });
+  });
+
+  // reveal on scroll
   var els = document.querySelectorAll('.reveal');
-  if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12 });
+    els.forEach(function (el) { io.observe(el); });
+  } else {
     els.forEach(function (el) { el.classList.add('in'); });
-    return;
   }
-  var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (e) {
-      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
-    });
-  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-  els.forEach(function (el) { io.observe(el); });
-  // od razu pokaż to, co jest w pierwszym ekranie (hero/intro) — nie czekaj na próg observera.
-  // (hero bywa WYŻSZE niż viewport i nigdy nie osiąga 12% swojej powierzchni → zostawało puste do scrolla)
-  requestAnimationFrame(function () {
-    els.forEach(function (el) {
-      var r = el.getBoundingClientRect();
-      if (r.top < window.innerHeight * 0.9 && r.bottom > 0) { el.classList.add('in'); io.unobserve(el); }
-    });
-  });
-})();
 
-// nav kondensuje się po przewinięciu (cienka linia + niższy pasek) — addytywne, lekkie
-(function () {
-  var nav = document.querySelector('.nav') || document.querySelector('header');
-  if (!nav) return;
-  var ticking = false;
-  function upd() { nav.classList.toggle('is-stuck', window.scrollY > 24); ticking = false; }
-  window.addEventListener('scroll', function () {
-    if (!ticking) { ticking = true; requestAnimationFrame(upd); }
-  }, { passive: true });
-  upd();
-})();
-
-/* === rodzina: fachowcy === */
-/* === rodzina FACHOWCY ===
-   TYLKO suwak PRZED/PO (before/after). NAV NIE chowa się (auto-hide) - telefon-CTA ma być ZAWSZE widoczny (decyzja FAZA 3).
-   is-stuck (przezroczysty->cień) obsługuje base.js. */
-(function () {
-  var sliders = document.querySelectorAll('[data-ba]');
-  if (!sliders.length) return;
-  sliders.forEach(function (s) {
-    var dragging = false;
-    function setPos(clientX) {
-      var r = s.getBoundingClientRect();
-      var p = ((clientX - r.left) / r.width) * 100;
-      p = Math.max(3, Math.min(97, p));
-      s.style.setProperty('--ba-pos', p + '%');
+  // hero crossfade slider
+  var slidesWrap = document.getElementById('heroSlides');
+  if (slidesWrap) {
+    var slides = slidesWrap.querySelectorAll('.hero-slide');
+    var dotsWrap = document.getElementById('heroDots');
+    var idx = 0, timer;
+    slides.forEach(function (_, i) {
+      var b = document.createElement('button');
+      b.setAttribute('aria-label', 'Zdjęcie ' + (i + 1));
+      if (i === 0) b.classList.add('on');
+      b.addEventListener('click', function () { go(i); reset(); });
+      dotsWrap.appendChild(b);
+    });
+    var dots = dotsWrap.querySelectorAll('button');
+    function go(n) {
+      slides[idx].classList.remove('on'); if (dots[idx]) dots[idx].classList.remove('on');
+      idx = (n + slides.length) % slides.length;
+      slides[idx].classList.add('on'); if (dots[idx]) dots[idx].classList.add('on');
     }
-    function down(e) { dragging = true; setPos(e.touches ? e.touches[0].clientX : e.clientX); }
-    function move(e) { if (dragging) setPos(e.touches ? e.touches[0].clientX : e.clientX); }
-    function up() { dragging = false; }
-    s.addEventListener('pointerdown', down);
-    window.addEventListener('pointermove', move, { passive: true });
-    window.addEventListener('pointerup', up);
-    s.addEventListener('touchstart', down, { passive: true });
-    s.addEventListener('touchmove', move, { passive: true });
-    s.addEventListener('touchend', up);
-  });
-})();
-
-/* === NAV NOBU kontroler (silnik) === */
-(function () {
-  var nav = document.querySelector('.nav');
-  if (!nav) return;
-  var last = window.scrollY || 0, TOP = 8, TH = 6, ticking = false;
-  function upd() {
-    var y = window.scrollY || 0;
-    if (y <= TOP) { nav.classList.remove('nav-hidden', 'nav-solid'); last = y; ticking = false; return; }
-    var d = y - last;
-    if (Math.abs(d) <= TH) { ticking = false; return; }
-    if (d > 0) nav.classList.add('nav-hidden');
-    else { nav.classList.remove('nav-hidden'); nav.classList.add('nav-solid'); }
-    last = y; ticking = false;
+    function reset() { clearInterval(timer); timer = setInterval(function () { go(idx + 1); }, 5000); }
+    reset();
   }
-  window.addEventListener('scroll', function () { if (!ticking) { ticking = true; window.requestAnimationFrame(upd); } }, { passive: true });
-  upd();
-})();
-
-/* === licznik otwarć demo (buy-signal) + geo === */
-(function(){try{if(String(location.protocol).indexOf('http')!==0)return;try{if(/[?&#]team=1/.test(location.search+location.hash)){localStorage.setItem('nb_team','1');}}catch(e){}try{if(localStorage.getItem('nb_team')==='1')return;}catch(e){}if((document.referrer||'').indexOf('crm-newbeginning')>-1)return;if(sessionStorage.getItem('_dv'))return;sessionStorage.setItem('_dv','1');var seg=(location.pathname.split('/').filter(Boolean)[0])||'';var base=location.origin+(seg?('/'+seg):'');var ua='';try{ua=(navigator.userAgent||'').slice(0,300);}catch(e){}var EP='https://zngfubfinbojfgaxdrbf.supabase.co/rest/v1/demo_views';var KEY='sb_publishable_MWwoyGlSCWnJ4awtOPF0ow_ZVS0Y8qK';function send(g){try{fetch(EP,{method:'POST',keepalive:true,headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+KEY,'Prefer':'return=minimal'},body:JSON.stringify({demo_url:base,page:location.pathname,referrer:(document.referrer||null),user_agent:(ua||null),ip:(g&&g.ip)||null,country:(g&&g.cc)||null,city:(g&&g.city)||null})}).catch(function(){});}catch(e){}}var done=false;function once(g){if(done)return;done=true;send(g);}try{var t=setTimeout(function(){once(null);},1500);fetch('https://ipwho.is/?fields=ip,success,country_code,city',{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){clearTimeout(t);once(d&&d.success!==false?{ip:d.ip,cc:d.country_code,city:d.city}:null);}).catch(function(){clearTimeout(t);once(null);});}catch(e){once(null);}}catch(e){}})();
-
-/* === LIGHTBOX galerii - klik w kafel = pełny kadr (strzałki / ESC / swipe) === */
-(function () {
-  var tiles = Array.prototype.slice.call(document.querySelectorAll('.tile img, .gallery-masonry .m-tile img'));
-  if (!tiles.length) return;
-
-  var box = document.createElement('div');
-  box.className = 'lb';
-  box.setAttribute('role', 'dialog');
-  box.setAttribute('aria-modal', 'true');
-  box.innerHTML = '<button class="lb-close" aria-label="Zamknij">&times;</button>' +
-    '<button class="lb-prev" aria-label="Poprzednie">&#8249;</button>' +
-    '<button class="lb-next" aria-label="Następne">&#8250;</button>' +
-    '<div><img alt=""><div class="lb-cap"></div></div>';
-  document.body.appendChild(box);
-
-  var big = box.querySelector('img');
-  var cap = box.querySelector('.lb-cap');
-  var i = 0;
-
-  function show(n) {
-    i = (n + tiles.length) % tiles.length;
-    var t = tiles[i];
-    big.src = t.src;
-    big.alt = t.alt || '';
-    var c = t.parentNode.querySelector('.cap');
-    cap.textContent = c ? c.textContent : (t.alt || '');
-  }
-  function open(n) { show(n); box.classList.add('open'); document.body.style.overflow = 'hidden'; }
-  function close() { box.classList.remove('open'); document.body.style.overflow = ''; }
-
-  tiles.forEach(function (t, n) {
-    t.addEventListener('click', function () { open(n); });
-  });
-  box.querySelector('.lb-close').addEventListener('click', close);
-  box.querySelector('.lb-prev').addEventListener('click', function (e) { e.stopPropagation(); show(i - 1); });
-  box.querySelector('.lb-next').addEventListener('click', function (e) { e.stopPropagation(); show(i + 1); });
-  box.addEventListener('click', function (e) { if (e.target === box || e.target === big.parentNode) close(); });
-  document.addEventListener('keydown', function (e) {
-    if (!box.classList.contains('open')) return;
-    if (e.key === 'Escape') close();
-    if (e.key === 'ArrowLeft') show(i - 1);
-    if (e.key === 'ArrowRight') show(i + 1);
-  });
-  // swipe na telefonie
-  var x0 = null;
-  box.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
-  box.addEventListener('touchend', function (e) {
-    if (x0 === null) return;
-    var dx = e.changedTouches[0].clientX - x0;
-    if (Math.abs(dx) > 50) show(dx < 0 ? i + 1 : i - 1);
-    x0 = null;
-  }, { passive: true });
 })();
